@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAY NIGHT — Arcade Rooms</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root{
+    --ink: #f4f2ff;
+    --bg-deep: #0e0c18;
+    --bg-panel: #181426;
+    --bg-panel-2: #1f1a32;
+    --line: #322a4d;
+    --magenta: #ff3d9a;
+    --cyan: #3dd9ff;
+    --amber: #ffb13d;
+    --green: #3dffa0;
+    --muted: #9890b8;
+    --shadow-hard: 6px 6px 0 #000;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg-deep);
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 60px;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  /* ---------- animated gaming background ---------- */
+  #bg-canvas{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    width:100%;
+    height:100%;
+  }
+  .bg-glow{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(255,61,154,0.18), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(61,217,255,0.16), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(61,255,160,0.10), transparent 50%);
+  }
+  .bg-grid{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image:
+      linear-gradient(rgba(61,217,255,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61,217,255,0.07) 1px, transparent 1px);
+    background-size:42px 42px;
+    -webkit-mask-image:radial-gradient(circle at 50% 30%, black 0%, transparent 75%);
+    mask-image:radial-gradient(circle at 50% 30%, black 0%, transparent 75%);
+    animation:gridDrift 18s linear infinite;
+  }
+  @keyframes gridDrift{
+    0%{ background-position:0 0, 0 0; }
+    100%{ background-position:42px 84px, 42px 84px; }
+  }
+  body > *:not(#bg-canvas):not(.bg-glow):not(.bg-grid){
+    position:relative;
+    z-index:1;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bg-grid{ animation:none; }
+  }
+
+  .marquee{
+    font-family:'Orbitron', sans-serif;
+    font-weight:900;
+    font-size:clamp(32px, 7vw, 56px);
+    letter-spacing:2px;
+    text-align:center;
+    margin-bottom:4px;
+    background:linear-gradient(90deg, var(--magenta), var(--amber), var(--cyan), var(--magenta));
+    background-size:300% auto;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:shine 5s linear infinite;
+    filter:drop-shadow(0 0 22px rgba(255,61,154,0.4));
+    text-transform:uppercase;
+  }
+  @keyframes shine{
+    to{ background-position:300% center; }
+  }
+  .marquee-sub{
+    text-align:center;
+    color:var(--muted);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    margin-bottom:32px;
+  }
+
+  .wrap{ width:100%; max-width:640px; }
+
+  .card{
+    background:rgba(24,20,38,0.85);
+    backdrop-filter:blur(6px);
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:24px;
+    box-shadow: var(--shadow-hard), 0 0 24px rgba(61,217,255,0.06);
+    margin-bottom:20px;
+    transition:border-color .2s ease, box-shadow .2s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .card:hover{
+    border-color:rgba(61,217,255,0.4);
+    box-shadow: var(--shadow-hard), 0 0 28px rgba(61,217,255,0.18);
+  }
+  .card-create{
+    background:
+      radial-gradient(circle at 100% 0%, rgba(255,61,154,0.20), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(255,177,61,0.10), transparent 50%),
+      rgba(24,20,38,0.88);
+  }
+  .card-join{
+    background:
+      radial-gradient(circle at 100% 0%, rgba(61,217,255,0.20), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(61,255,160,0.10), transparent 50%),
+      rgba(24,20,38,0.88);
+  }
+  .card-room{
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,177,61,0.14), transparent 60%),
+      rgba(24,20,38,0.88);
+  }
+  .card h2{
+    font-family:'Orbitron', sans-serif;
+    font-weight:800;
+    font-size:17px;
+    margin-bottom:14px;
+    letter-spacing:0.8px;
+    text-transform:uppercase;
+  }
+
+  label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  input[type=text]{
+    width:100%;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+    color:var(--ink);
+    font-family:'JetBrains Mono', monospace;
+    font-size:15px;
+    outline:none;
+  }
+  input[type=text]:focus{ border-color:var(--cyan); }
+
+  .row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .row > *{ flex:1; min-width:140px; }
+
+  .game-pick{
+    display:flex; gap:12px; margin:14px 0 18px; flex-wrap:wrap;
+  }
+  .game-opt{
+    flex:1; min-width:130px;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:10px;
+    padding:16px 12px;
+    text-align:center;
+    cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .game-opt:hover{ transform:translateY(-2px); }
+  .game-opt.active{ border-color:var(--magenta); box-shadow:0 0 0 1px var(--magenta) inset; }
+  .game-opt .ico{ font-size:28px; display:block; margin-bottom:6px; }
+  .game-opt .name{ font-weight:700; font-size:13px; }
+  .game-opt .desc{ font-size:11px; color:var(--muted); margin-top:3px; }
+
+  button{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.3px;
+    border:2px solid #000;
+    border-radius:8px;
+    padding:13px 18px;
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease;
+    box-shadow:4px 4px 0 #000;
+  }
+  button:active{ transform:translate(2px,2px); box-shadow:2px 2px 0 #000; }
+  .btn-primary{ background:var(--magenta); color:#1a0612; }
+  .btn-secondary{ background:var(--cyan); color:#06181a; }
+  .btn-ghost{ background:var(--bg-panel-2); color:var(--ink); border-color:var(--line); box-shadow:none; }
+  .btn-ghost:active{ transform:none; }
+  button:disabled{ opacity:0.4; cursor:not-allowed; }
+  button.full{ width:100%; }
+
+  .divider{
+    display:flex; align-items:center; gap:12px; color:var(--muted);
+    font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase;
+    margin:20px 0;
+  }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--line); }
+
+  .ticket{
+    background:repeating-linear-gradient(135deg, var(--bg-panel-2), var(--bg-panel-2) 10px, var(--bg-panel) 10px, var(--bg-panel) 20px);
+    border:2px dashed var(--amber);
+    border-radius:10px;
+    padding:18px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    flex-wrap:wrap;
+  }
+  .ticket .code{
+    font-family:'JetBrains Mono', monospace;
+    font-size:26px; font-weight:700; letter-spacing:6px;
+    color:var(--amber);
+  }
+  .ticket .label{ font-size:11px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
+
+  .players-bar{
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .chip{
+    background:var(--bg-panel-2);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:12px;
+    font-family:'JetBrains Mono', monospace;
+    display:flex; align-items:center; gap:6px;
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; background:var(--green); }
+
+  .status-line{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:16px;
+    min-height:18px;
+  }
+  .status-line.win{ color:var(--green); font-weight:700; }
+  .status-line.turn-me{ color:var(--amber); font-weight:700; }
+
+  /* Tic Tac Toe */
+  .ttt-board{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+    max-width:320px;
+    margin:0 auto;
+  }
+  .ttt-cell{
+    aspect-ratio:1;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Archivo Black', sans-serif;
+    font-size:40px;
+    cursor:pointer;
+    transition:border-color .1s ease;
+  }
+  .ttt-cell:hover{ border-color:var(--cyan); }
+  .ttt-cell.x{ color:var(--magenta); }
+  .ttt-cell.o{ color:var(--cyan); }
+  .ttt-cell.win-cell{ border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset; }
+
+  /* Bingo */
+  .bingo-layout{ display:flex; gap:24px; flex-wrap:wrap; }
+  .bingo-card{ flex:1; min-width:240px; }
+  .bingo-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:6px;
+  }
+  .bingo-header{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .bingo-header span{
+    text-align:center;
+    font-family:'Archivo Black', sans-serif;
+    color:var(--magenta);
+    font-size:14px;
+  }
+  .bingo-cell{
+    aspect-ratio:1;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:600;
+    font-size:13px;
+  }
+  .bingo-cell.marked{ background:var(--magenta); border-color:var(--magenta); color:#1a0612; }
+  .bingo-cell.free{ background:var(--amber); border-color:var(--amber); color:#231400; font-size:10px; }
+  .called-panel{ flex:1; min-width:200px; }
+  .called-current{
+    text-align:center;
+    font-family:'Archivo Black', sans-serif;
+    font-size:54px;
+    color:var(--amber);
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:12px;
+    padding:18px 0;
+    margin-bottom:14px;
+  }
+  .called-history{
+    display:flex; flex-wrap:wrap; gap:6px;
+    max-height:120px; overflow-y:auto;
+    margin-bottom:14px;
+  }
+  .called-history span{
+    background:var(--bg-panel-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:4px 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .footer-note{
+    text-align:center; color:var(--muted); font-size:11px;
+    font-family:'JetBrains Mono', monospace;
+    margin-top:30px; letter-spacing:0.5px;
+  }
+
+  .made-by{
+    text-align:center;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:13px;
+    color:var(--muted);
+    margin-top:10px;
+    letter-spacing:0.5px;
+  }
+  .made-by span{
+    color:var(--cyan);
+    font-weight:700;
+  }
+  .made-by .heart{
+    color:var(--magenta);
+    display:inline-block;
+    animation:heartbeat 1.3s ease-in-out infinite;
+  }
+  @keyframes heartbeat{
+    0%, 100%{ transform:scale(1); }
+    25%{ transform:scale(1.3); }
+    40%{ transform:scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .made-by .heart{ animation:none; }
+  }
+
+  .hidden{ display:none !important; }
+
+  .copy-row{ display:flex; gap:8px; margin-top:10px; }
+  .copy-row input{ flex:1; }
+
+  /* ---------- WhatsApp share button ---------- */
+  .btn-whatsapp{
+    background:#25D366;
+    color:#06180e;
+    border-color:#000;
+    display:flex; align-items:center; gap:6px; justify-content:center;
+    white-space:nowrap;
+  }
+
+  /* ---------- vs Computer toggle ---------- */
+  .mode-pick{
+    display:flex; gap:10px; margin:14px 0 4px;
+  }
+  .mode-opt{
+    flex:1;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:10px;
+    padding:12px 10px;
+    text-align:center;
+    cursor:pointer;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.5px;
+    transition:border-color .12s ease, transform .12s ease;
+  }
+  .mode-opt:hover{ transform:translateY(-2px); }
+  .mode-opt.active{ border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset; color:var(--green); }
+  .mode-opt .ico{ display:block; font-size:18px; margin-bottom:4px; }
+  .mode-hint{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:var(--muted);
+    margin-bottom:14px;
+    letter-spacing:0.3px;
+  }
+  .diff-pick{
+    display:flex; gap:8px; margin:0 0 14px;
+  }
+  .diff-opt{
+    flex:1;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:8px 6px;
+    text-align:center;
+    cursor:pointer;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    transition:border-color .12s ease;
+  }
+  .diff-opt.active{ border-color:var(--amber); color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset; }
+
+  .cpu-badge{
+    display:inline-flex; align-items:center; gap:5px;
+    background:var(--bg-panel-2);
+    border:1px solid var(--green);
+    color:var(--green);
+    border-radius:999px;
+    padding:5px 12px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.5px;
+    margin-bottom:14px;
+  }
+  .cpu-badge .dot{ background:var(--green); animation:cpuPulse 1.4s ease-in-out infinite; }
+  @keyframes cpuPulse{
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:0.4; transform:scale(0.7); }
+  }
+
+  /* ---------- Room chat ---------- */
+  .chat-card{ margin-top:20px; }
+  .chat-messages{
+    max-height:220px;
+    min-height:90px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:14px;
+    padding-right:4px;
+  }
+  .chat-messages::-webkit-scrollbar{ width:6px; }
+  .chat-messages::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
+  .chat-msg{
+    background:var(--bg-deep);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 12px;
+    max-width:82%;
+    align-self:flex-start;
+  }
+  .chat-msg.me{
+    align-self:flex-end;
+    border-color:var(--magenta);
+    background:rgba(255,61,154,0.08);
+  }
+  .chat-msg .meta{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:var(--muted);
+    margin-bottom:3px;
+    letter-spacing:0.4px;
+  }
+  .chat-msg.me .meta{ color:var(--magenta); text-align:right; }
+  .chat-msg .text{ font-size:13.5px; line-height:1.4; word-break:break-word; }
+  .chat-msg .text a{ color:var(--cyan); }
+  .chat-empty{
+    text-align:center;
+    color:var(--muted);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    padding:18px 0;
+    letter-spacing:0.4px;
+  }
+  .chat-input-row{ display:flex; gap:8px; }
+  .chat-input-row input{
+    flex:1;
+    background:var(--bg-deep);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:11px 14px;
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    font-size:14px;
+    outline:none;
+  }
+  .chat-input-row input:focus{ border-color:var(--cyan); }
+
+  @media (max-width:480px){
+    .ticket .code{ font-size:20px; letter-spacing:3px; }
+    .ticket{ flex-direction:column; align-items:flex-start; }
+    .ticket .row{ width:100%; }
+  }
+</style>
+
+<!-- ---------- Firebase ---------- -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, set, get, update, onValue, off, runTransaction
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBDpBHjRmO95RRPBvEswUK3z23RJ5mNSGQ",
+    authDomain: "play-night-d89ef.firebaseapp.com",
+    databaseURL: "https://play-night-d89ef-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "play-night-d89ef",
+    storageBucket: "play-night-d89ef.firebasestorage.app",
+    messagingSenderId: "1024638366119",
+    appId: "1:1024638366119:web:74e2432ef8030be61a0682",
+    measurementId: "G-3CV4407SX1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Expose a minimal bridge so the non-module game script below can use Firebase.
+  window.__pnFirebase = { db, ref, set, get, update, onValue, off, runTransaction };
+  window.dispatchEvent(new Event('pn-firebase-ready'));
+</script>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+
+  <div class="marquee">PLAY NIGHT</div>
+  <div class="marquee-sub">Arcade rooms · live chat · share on WhatsApp · play vs computer</div>
+
+  <div class="wrap">
+
+    <!-- LOBBY -->
+    <div id="screen-lobby">
+      <div class="card card-create">
+        <h2>🕹️ Start a room</h2>
+        <label for="nameInputCreate">Your name</label>
+        <input type="text" id="nameInputCreate" maxlength="16" placeholder="e.g. Riya">
+        <div class="game-pick" id="gamePick">
+          <div class="game-opt active" data-game="ttt">
+            <span class="ico">✕○</span>
+            <div class="name">Zero Cross</div>
+            <div class="desc">Tic-Tac-Toe · 2 players</div>
+          </div>
+          <div class="game-opt" data-game="bingo">
+            <span class="ico">🎟️</span>
+            <div class="name">Bingo</div>
+            <div class="desc">2–8 players</div>
+          </div>
+        </div>
+
+        <div class="mode-pick" id="modePick">
+          <div class="mode-opt active" data-mode="online">
+            <span class="ico">🌐</span>
+            Play online
+          </div>
+          <div class="mode-opt" data-mode="cpu">
+            <span class="ico">🤖</span>
+            vs Computer
+          </div>
+        </div>
+        <div class="mode-hint" id="modeHint">Share a link and play with anyone, on any device.</div>
+
+        <div class="diff-pick hidden" id="diffPick">
+          <div class="diff-opt" data-diff="easy">Easy</div>
+          <div class="diff-opt active" data-diff="normal">Normal</div>
+          <div class="diff-opt" data-diff="hard">Hard</div>
+        </div>
+
+        <button class="btn-primary full" id="createBtn">Create room &amp; get link</button>
+      </div>
+
+      <div class="divider">or</div>
+
+      <div class="card card-join">
+        <h2>🔗 Join with a code</h2>
+        <label for="nameInputJoin">Your name</label>
+        <input type="text" id="nameInputJoin" maxlength="16" placeholder="e.g. Aman" style="margin-bottom:12px;">
+        <label for="codeInput">Room code</label>
+        <input type="text" id="codeInput" maxlength="6" placeholder="ABC123" style="text-transform:uppercase;">
+        <button class="btn-secondary full" id="joinBtn" style="margin-top:14px;">Join room</button>
+      </div>
+    </div>
+
+    <!-- ROOM -->
+    <div id="screen-room" class="hidden">
+      <div class="ticket" id="ticketBox">
+        <div>
+          <div class="label">Room code — share this link</div>
+          <div class="code" id="roomCodeDisplay">------</div>
+        </div>
+        <div class="row" style="flex-wrap:nowrap; gap:8px;">
+          <button class="btn-ghost" id="copyLinkBtn">📋 Copy link</button>
+          <button class="btn-whatsapp" id="whatsappBtn">💬 WhatsApp</button>
+        </div>
+      </div>
+      <div class="copy-row hidden" id="copyRow">
+        <input type="text" id="copyLinkInput" readonly>
+      </div>
+
+      <div class="card card-room" style="margin-top:20px;">
+        <div class="cpu-badge hidden" id="cpuBadge"><span class="dot" style="width:7px;height:7px;border-radius:50%;display:inline-block;"></span> vs Computer · <span id="cpuDiffLabel">Normal</span></div>
+        <div class="players-bar" id="playersBar"></div>
+        <div class="status-line" id="statusLine">Waiting for players…</div>
+
+        <!-- TTT board -->
+        <div id="tttArea" class="hidden">
+          <div class="ttt-board" id="tttBoard"></div>
+        </div>
+
+        <!-- Bingo board -->
+        <div id="bingoArea" class="hidden">
+          <div class="bingo-layout">
+            <div class="bingo-card">
+              <div class="label" style="margin-bottom:8px;">Your card</div>
+              <div class="bingo-header"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+              <div class="bingo-grid" id="bingoGrid"></div>
+              <button class="btn-primary full" id="claimBingoBtn" style="margin-top:14px;">🎉 BINGO!</button>
+            </div>
+            <div class="called-panel">
+              <div class="label" style="margin-bottom:8px;">Last called</div>
+              <div class="called-current" id="calledCurrent">--</div>
+              <button class="btn-secondary full" id="drawBtn" style="margin-bottom:14px;">Draw next number</button>
+              <div class="label" style="margin-bottom:6px;">History</div>
+              <div class="called-history" id="calledHistory"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:20px;">
+          <button class="btn-ghost" id="resetBtn">Restart game</button>
+          <button class="btn-ghost" id="leaveBtn">Leave room</button>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div class="card card-room chat-card" id="chatCard">
+        <h2>💬 Room chat</h2>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-empty" id="chatEmpty">No messages yet — say hi 👋</div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" maxlength="300" placeholder="Say something… (paste a link too)">
+          <button class="btn-secondary" id="chatSendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">Open the invite link on any device to join the same room · chat &amp; game state sync automatically · or pick "vs Computer" to play instantly</div>
+  <div class="made-by">Made by <span>Mankaran</span> <span class="heart">♥</span></div>
+
+<script>
+(() => {
+  // ---------- animated particle background ----------
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let w, h;
+  const colors = ['#ff3d9a', '#3dd9ff', '#3dffa0', '#ffb13d'];
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function initParticles(){
+    const count = Math.min(70, Math.floor((w * h) / 22000));
+    particles = Array.from({ length: count }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 2 + 1,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      pulse: Math.random() * Math.PI * 2
+    }));
+  }
+  initParticles();
+  window.addEventListener('resize', initParticles);
+
+  function step(){
+    ctx.clearRect(0, 0, w, h);
+
+    // connecting lines between nearby particles
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const a = particles[i], b = particles[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 130){
+          ctx.strokeStyle = `rgba(61,217,255,${0.10 * (1 - dist/130)})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // particles with soft glow pulse
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.pulse += 0.02;
+      if(p.x < 0 || p.x > w) p.vx *= -1;
+      if(p.y < 0 || p.y > h) p.vy *= -1;
+
+      const glow = (Math.sin(p.pulse) + 1) / 2;
+      const radius = p.r + glow * 1.5;
+
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 0.35 + glow * 0.4;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8 + glow * 6;
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    });
+
+    if(!reduceMotion) requestAnimationFrame(step);
+  }
+  step();
+})();
+</script>
+
+<script>
+(() => {
+  // ---------- player identity (in-memory only, per tab) ----------
+  const myId = 'p_' + Math.random().toString(36).slice(2, 10);
+  let myName = '';
+  let currentRoom = null;
+  let pollTimer = null;
+  let lastSnapshot = '';
+  let selectedGame = 'ttt';
+  let selectedMode = 'online';   // 'online' | 'cpu'
+  let selectedDiff = 'normal';   // 'easy' | 'normal' | 'hard'
+  let isCpuGame = false;
+  let cpuState = null;           // local state when playing vs computer
+  let lastChatCount = 0;
+
+  // ---------- helpers ----------
+  function genCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let s = '';
+    for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+
+  function roomKey(code){ return 'rooms/' + code; }
+
+  function getFB(){
+    return window.__pnFirebase;
+  }
+
+  async function saveRoom(code, state){
+    try{
+      const fb = getFB();
+      await fb.set(fb.ref(fb.db, roomKey(code)), state);
+    }catch(e){ console.error('save failed', e); }
+  }
+
+  // Partial, safe update (used for transactional-ish ops like chat append / player join)
+  async function updateRoom(code, partial){
+    try{
+      const fb = getFB();
+      await fb.update(fb.ref(fb.db, roomKey(code)), partial);
+    }catch(e){ console.error('update failed', e); }
+  }
+
+  async function loadRoom(code){
+    try{
+      const fb = getFB();
+      const snap = await fb.get(fb.ref(fb.db, roomKey(code)));
+      return snap.exists() ? snap.val() : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  // Live subscription — replaces polling. Calls cb(state) any time the room changes.
+  let activeRoomRef = null;
+  let activeRoomCallback = null;
+
+  function subscribeToRoom(code, cb){
+    unsubscribeFromRoom();
+    const fb = getFB();
+    activeRoomRef = fb.ref(fb.db, roomKey(code));
+    activeRoomCallback = (snap) => {
+      const state = snap.exists() ? snap.val() : null;
+      if(state) cb(state);
+    };
+    fb.onValue(activeRoomRef, activeRoomCallback, (err) => {
+      console.error('Firebase listener error', err);
+    });
+  }
+
+  function unsubscribeFromRoom(){
+    if(activeRoomRef && activeRoomCallback){
+      const fb = getFB();
+      fb.off(activeRoomRef, 'value', activeRoomCallback);
+    }
+    activeRoomRef = null;
+    activeRoomCallback = null;
+  }
+
+  // ---------- screens ----------
+  const screenLobby = document.getElementById('screen-lobby');
+  const screenRoom = document.getElementById('screen-room');
+
+  function showRoomScreen(){
+    screenLobby.classList.add('hidden');
+    screenRoom.classList.remove('hidden');
+  }
+  function showLobbyScreen(){
+    screenRoom.classList.add('hidden');
+    screenLobby.classList.remove('hidden');
+  }
+
+  // ---------- game picker ----------
+  document.getElementById('gamePick').addEventListener('click', (e) => {
+    const opt = e.target.closest('.game-opt');
+    if(!opt) return;
+    document.querySelectorAll('.game-opt').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    selectedGame = opt.dataset.game;
+    updateModeAvailability();
+  });
+
+  // ---------- mode picker (online vs computer) ----------
+  const modePickEl = document.getElementById('modePick');
+  const modeHintEl = document.getElementById('modeHint');
+  const diffPickEl = document.getElementById('diffPick');
+
+  function updateModeAvailability(){
+    const cpuOpt = modePickEl.querySelector('[data-mode="cpu"]');
+    if(selectedGame === 'bingo'){
+      // Bingo needs multiple players to be meaningful — force online
+      if(selectedMode === 'cpu'){ setMode('online'); }
+      cpuOpt.style.opacity = '0.4';
+      cpuOpt.style.pointerEvents = 'none';
+    } else {
+      cpuOpt.style.opacity = '1';
+      cpuOpt.style.pointerEvents = 'auto';
+    }
+  }
+
+  function setMode(mode){
+    selectedMode = mode;
+    document.querySelectorAll('.mode-opt').forEach(o => o.classList.toggle('active', o.dataset.mode === mode));
+    if(mode === 'cpu'){
+      modeHintEl.textContent = 'Play instantly, just you vs the computer. No link needed.';
+      diffPickEl.classList.remove('hidden');
+    } else {
+      modeHintEl.textContent = 'Share a link and play with anyone, on any device.';
+      diffPickEl.classList.add('hidden');
+    }
+  }
+
+  modePickEl.addEventListener('click', (e) => {
+    const opt = e.target.closest('.mode-opt');
+    if(!opt || opt.style.pointerEvents === 'none') return;
+    setMode(opt.dataset.mode);
+  });
+
+  diffPickEl.addEventListener('click', (e) => {
+    const opt = e.target.closest('.diff-opt');
+    if(!opt) return;
+    document.querySelectorAll('.diff-opt').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    selectedDiff = opt.dataset.diff;
+  });
+
+  // ---------- TTT logic ----------
+  function emptyTttState(){
+    return { board: Array(9).fill(null), turn: 'X', winner: null, winLine: null };
+  }
+  function checkTttWin(board){
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(const line of lines){
+      const [a,b,c] = line;
+      if(board[a] && board[a]===board[b] && board[b]===board[c]) return line;
+    }
+    return null;
+  }
+
+  // ---------- CPU opponent (minimax, with difficulty) ----------
+  function emptyCells(board){
+    const out = [];
+    board.forEach((v,i) => { if(!v) out.push(i); });
+    return out;
+  }
+
+  function minimax(board, player, cpuSym, huSym, depth){
+    const line = checkTttWin(board);
+    if(line) return { score: (board[line[0]] === cpuSym ? 10 - depth : depth - 10) };
+    const empties = emptyCells(board);
+    if(empties.length === 0) return { score: 0 };
+
+    let best = null;
+    for(const idx of empties){
+      board[idx] = player;
+      const result = minimax(board, player === cpuSym ? huSym : cpuSym, cpuSym, huSym, depth + 1);
+      board[idx] = null;
+      const score = result.score;
+      if(best === null ||
+        (player === cpuSym && score > best.score) ||
+        (player === huSym && score < best.score)){
+        best = { score, move: idx };
+      }
+    }
+    return best;
+  }
+
+  function cpuPickMove(board, cpuSym, huSym, difficulty){
+    const empties = emptyCells(board);
+    if(empties.length === 0) return -1;
+
+    if(difficulty === 'easy'){
+      // mostly random, occasional smart block
+      if(Math.random() < 0.25){
+        const result = minimax(board.slice(), cpuSym, cpuSym, huSym, 0);
+        if(result && result.move !== undefined) return result.move;
+      }
+      return empties[Math.floor(Math.random() * empties.length)];
+    }
+    if(difficulty === 'normal'){
+      // smart most of the time, occasionally suboptimal
+      if(Math.random() < 0.65){
+        const result = minimax(board.slice(), cpuSym, cpuSym, huSym, 0);
+        if(result && result.move !== undefined) return result.move;
+      }
+      return empties[Math.floor(Math.random() * empties.length)];
+    }
+    // hard — perfect play
+    const result = minimax(board.slice(), cpuSym, cpuSym, huSym, 0);
+    return (result && result.move !== undefined) ? result.move : empties[0];
+  }
+
+  // ---------- Bingo logic ----------
+  function seededRandom(seed){
+    let s = seed % 2147483647;
+    if (s <= 0) s += 2147483646;
+    return function(){
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
+    };
+  }
+  function hashStr(str){
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) | 0; }
+    return Math.abs(h) || 1;
+  }
+  function genBingoCard(seedKey){
+    const rnd = seededRandom(hashStr(seedKey));
+    const ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
+    const cols = ranges.map(([lo,hi]) => {
+      const pool = [];
+      for(let n=lo;n<=hi;n++) pool.push(n);
+      // shuffle
+      for(let i=pool.length-1;i>0;i--){
+        const j = Math.floor(rnd()*(i+1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0,5);
+    });
+    const grid = [];
+    for(let r=0;r<5;r++){
+      const row = [];
+      for(let c=0;c<5;c++){
+        if(r===2 && c===2) row.push('FREE');
+        else row.push(cols[c][r]);
+      }
+      grid.push(row);
+    }
+    return grid;
+  }
+
+  // ---------- create / join ----------
+  document.getElementById('createBtn').addEventListener('click', async () => {
+    const nameEl = document.getElementById('nameInputCreate');
+    myName = nameEl.value.trim() || 'Player 1';
+
+    if(selectedMode === 'cpu' && selectedGame === 'ttt'){
+      startCpuGame();
+      return;
+    }
+
+    const code = genCode();
+    const game = selectedGame;
+    const state = {
+      game,
+      createdAt: Date.now(),
+      players: [{ id: myId, name: myName }],
+      ttt: game === 'ttt' ? emptyTttState() : null,
+      bingo: game === 'bingo' ? { called: [], current: null } : null,
+      hostId: myId,
+      chat: []
+    };
+    await saveRoom(code, state);
+    enterRoom(code, state);
+    history.replaceState(null, '', '?room=' + code);
+  });
+
+  document.getElementById('joinBtn').addEventListener('click', async () => {
+    const nameEl = document.getElementById('nameInputJoin');
+    const codeEl = document.getElementById('codeInput');
+    myName = nameEl.value.trim() || 'Player';
+    const code = codeEl.value.trim().toUpperCase();
+    if(!code){ alert('Enter a room code'); return; }
+    const state = await loadRoom(code);
+    if(!state){ alert('Room not found. Check the code.'); return; }
+    if(!state.players.find(p => p.id === myId)){
+      if(state.game === 'ttt' && state.players.length >= 2){
+        alert('This Tic-Tac-Toe room is full (2 players max). Try Bingo or a new room.');
+        return;
+      }
+      state.players.push({ id: myId, name: myName });
+      await saveRoom(code, state);
+    }
+    enterRoom(code, state);
+    history.replaceState(null, '', '?room=' + code);
+  });
+
+  async function enterRoom(code, state){
+    currentRoom = code;
+    isCpuGame = false;
+    document.getElementById('ticketBox').classList.remove('hidden');
+    document.getElementById('chatCard').classList.remove('hidden');
+    document.getElementById('cpuBadge').classList.add('hidden');
+    document.getElementById('roomCodeDisplay').textContent = code;
+    const link = location.origin + location.pathname + '?room=' + code;
+    document.getElementById('copyLinkInput').value = link;
+    document.getElementById('copyRow').classList.add('hidden');
+    lastChatCount = 0;
+    showRoomScreen();
+    renderRoom(state);
+    startPolling();
+  }
+
+  function startCpuGame(){
+    isCpuGame = true;
+    currentRoom = null;
+    if(pollTimer) clearInterval(pollTimer);
+    cpuState = {
+      game: 'ttt',
+      players: [
+        { id: myId, name: myName },
+        { id: 'cpu', name: 'Computer (' + selectedDiff[0].toUpperCase() + selectedDiff.slice(1) + ')' }
+      ],
+      ttt: emptyTttState(),
+      hostId: myId,
+      cpuDifficulty: selectedDiff
+    };
+    document.getElementById('ticketBox').classList.add('hidden');
+    document.getElementById('chatCard').classList.add('hidden');
+    document.getElementById('copyRow').classList.add('hidden');
+    const badge = document.getElementById('cpuBadge');
+    badge.classList.remove('hidden');
+    document.getElementById('cpuDiffLabel').textContent = selectedDiff[0].toUpperCase() + selectedDiff.slice(1);
+    showRoomScreen();
+    renderRoom(cpuState);
+  }
+
+  function maybeCpuMove(state){
+    if(state.game !== 'ttt' || !isCpuGame) return;
+    const t = state.ttt;
+    if(t.winner) return;
+    if(t.turn !== 'O') return; // human is always X (first move), CPU is O
+    setTimeout(() => {
+      const move = cpuPickMove(t.board.slice(), 'O', 'X', state.cpuDifficulty || 'normal');
+      if(move < 0) return;
+      t.board[move] = 'O';
+      const line = checkTttWin(t.board);
+      if(line){ t.winner = 'O'; t.winLine = line; }
+      else if(t.board.every(c => c)){ t.winner = 'draw'; }
+      else { t.turn = 'X'; }
+      renderRoom(state);
+    }, 450);
+  }
+
+  // auto-join from URL
+  window.addEventListener('DOMContentLoaded', async () => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('room');
+    if(code){
+      document.getElementById('codeInput').value = code;
+    }
+  });
+
+  // ---------- copy link ----------
+  document.getElementById('copyLinkBtn').addEventListener('click', () => {
+    const row = document.getElementById('copyRow');
+    const input = document.getElementById('copyLinkInput');
+    row.classList.remove('hidden');
+    input.select();
+    try{
+      document.execCommand('copy');
+      const btn = document.getElementById('copyLinkBtn');
+      const old = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = old, 1500);
+    }catch(e){}
+  });
+
+  // ---------- polling ----------
+  function startPolling(){
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      if(!currentRoom) return;
+      const state = await loadRoom(currentRoom);
+      if(!state) return;
+      const snap = JSON.stringify(state);
+      if(snap !== lastSnapshot){
+        renderRoom(state);
+      }
+    }, 1400);
+  }
+
+  // ---------- render ----------
+  function renderRoom(state){
+    lastSnapshot = JSON.stringify(state);
+
+    // players bar
+    const bar = document.getElementById('playersBar');
+    bar.innerHTML = '';
+    state.players.forEach(p => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = '<span class="dot"></span>' + escapeHtml(p.name) + (p.id===myId ? ' (you)' : '');
+      bar.appendChild(chip);
+    });
+
+    if(state.game === 'ttt'){
+      document.getElementById('tttArea').classList.remove('hidden');
+      document.getElementById('bingoArea').classList.add('hidden');
+      renderTtt(state);
+    } else {
+      document.getElementById('bingoArea').classList.remove('hidden');
+      document.getElementById('tttArea').classList.add('hidden');
+      renderBingo(state);
+    }
+
+    if(!isCpuGame) renderChat(state);
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderTtt(state){
+    const t = state.ttt;
+    const boardEl = document.getElementById('tttBoard');
+    boardEl.innerHTML = '';
+    const myIndex = state.players.findIndex(p => p.id === myId);
+    const mySymbol = myIndex === 0 ? 'X' : myIndex === 1 ? 'O' : null;
+    const statusEl = document.getElementById('statusLine');
+
+    if(!isCpuGame && state.players.length < 2){
+      statusEl.textContent = 'Share the link — waiting for opponent…';
+      statusEl.className = 'status-line';
+    } else if(t.winner === 'draw'){
+      statusEl.textContent = "It's a draw!";
+      statusEl.className = 'status-line win';
+    } else if(t.winner){
+      const winnerName = state.players[t.winner === 'X' ? 0 : 1]?.name || t.winner;
+      const youWon = t.winner === mySymbol;
+      statusEl.textContent = youWon ? 'You won! 🎉' : (isCpuGame ? 'Computer wins! Try again 🤖' : winnerName + ' wins!');
+      statusEl.className = 'status-line win';
+    } else {
+      const isMyTurn = t.turn === mySymbol;
+      statusEl.textContent = isMyTurn ? 'Your turn — pick a square' : (isCpuGame ? 'Computer is thinking…' : "Opponent's turn…");
+      statusEl.className = 'status-line' + (isMyTurn ? ' turn-me' : '');
+    }
+
+    t.board.forEach((val, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'ttt-cell' + (val === 'X' ? ' x' : val === 'O' ? ' o' : '');
+      if(t.winLine && t.winLine.includes(i)) cell.classList.add('win-cell');
+      cell.textContent = val || '';
+      cell.addEventListener('click', () => handleTttMove(i, state, mySymbol));
+      boardEl.appendChild(cell);
+    });
+  }
+
+  async function handleTttMove(i, state, mySymbol){
+    const t = state.ttt;
+    if(t.winner) return;
+    if(!isCpuGame && state.players.length < 2) return;
+    if(!mySymbol || t.turn !== mySymbol) return;
+    if(t.board[i]) return;
+    t.board[i] = mySymbol;
+    const line = checkTttWin(t.board);
+    if(line){
+      t.winner = mySymbol;
+      t.winLine = line;
+    } else if(t.board.every(c => c)){
+      t.winner = 'draw';
+    } else {
+      t.turn = t.turn === 'X' ? 'O' : 'X';
+    }
+    if(isCpuGame){
+      renderRoom(state);
+      maybeCpuMove(state);
+      return;
+    }
+    await saveRoom(currentRoom, state);
+    renderRoom(state);
+  }
+
+  function renderBingo(state){
+    const myCard = genBingoCard(currentRoom + ':' + myId);
+    const grid = document.getElementById('bingoGrid');
+    grid.innerHTML = '';
+    const called = new Set(state.bingo.called);
+    let win = true;
+    myCard.forEach((row, r) => {
+      row.forEach((val, c) => {
+        const cell = document.createElement('div');
+        const isFree = val === 'FREE';
+        const isMarked = isFree || called.has(val);
+        cell.className = 'bingo-cell' + (isFree ? ' free' : isMarked ? ' marked' : '');
+        cell.textContent = isFree ? 'FREE' : val;
+        grid.appendChild(cell);
+      });
+    });
+
+    document.getElementById('calledCurrent').textContent = state.bingo.current ?? '--';
+    const hist = document.getElementById('calledHistory');
+    hist.innerHTML = '';
+    state.bingo.called.slice().reverse().forEach(n => {
+      const span = document.createElement('span');
+      span.textContent = n;
+      hist.appendChild(span);
+    });
+
+    const statusEl = document.getElementById('statusLine');
+    if(state.bingo.winnerName){
+      statusEl.textContent = state.bingo.winnerName + ' shouted BINGO! 🎉';
+      statusEl.className = 'status-line win';
+    } else {
+      statusEl.textContent = state.players.length < 2
+        ? 'Share the link — waiting for more players…'
+        : 'Anyone can draw a number · mark your card · shout BINGO when you complete a line';
+      statusEl.className = 'status-line';
+    }
+
+    document.getElementById('drawBtn').disabled = !!state.bingo.winnerName || state.bingo.called.length >= 75;
+    document.getElementById('claimBingoBtn').disabled = !!state.bingo.winnerName;
+  }
+
+  document.getElementById('drawBtn').addEventListener('click', async () => {
+    const state = await loadRoom(currentRoom);
+    if(!state || state.bingo.winnerName) return;
+    const remaining = [];
+    for(let n=1;n<=75;n++) if(!state.bingo.called.includes(n)) remaining.push(n);
+    if(remaining.length === 0) return;
+    const next = remaining[Math.floor(Math.random()*remaining.length)];
+    state.bingo.called.push(next);
+    state.bingo.current = next;
+    await saveRoom(currentRoom, state);
+    renderRoom(state);
+  });
+
+  document.getElementById('claimBingoBtn').addEventListener('click', async () => {
+    const state = await loadRoom(currentRoom);
+    if(!state || state.bingo.winnerName) return;
+    const myCard = genBingoCard(currentRoom + ':' + myId);
+    const called = new Set(state.bingo.called);
+    const marked = myCard.map(row => row.map(v => v === 'FREE' || called.has(v)));
+    let hasLine = false;
+    for(let r=0;r<5;r++) if(marked[r].every(Boolean)) hasLine = true;
+    for(let c=0;c<5;c++) if(marked.every(row => row[c])) hasLine = true;
+    if(marked[0][0] && marked[1][1] && marked[2][2] && marked[3][3] && marked[4][4]) hasLine = true;
+    if(marked[0][4] && marked[1][3] && marked[2][2] && marked[3][1] && marked[4][0]) hasLine = true;
+    if(!hasLine){
+      alert("Not yet! You don't have a complete line.");
+      return;
+    }
+    state.bingo.winnerName = myName;
+    await saveRoom(currentRoom, state);
+    renderRoom(state);
+  });
+
+  // ---------- reset / leave ----------
+  document.getElementById('resetBtn').addEventListener('click', async () => {
+    if(isCpuGame){
+      cpuState.ttt = emptyTttState();
+      renderRoom(cpuState);
+      return;
+    }
+    const state = await loadRoom(currentRoom);
+    if(!state) return;
+    if(state.game === 'ttt'){
+      state.ttt = emptyTttState();
+    } else {
+      state.bingo = { called: [], current: null };
+    }
+    await saveRoom(currentRoom, state);
+    renderRoom(state);
+  });
+
+  document.getElementById('leaveBtn').addEventListener('click', () => {
+    if(pollTimer) clearInterval(pollTimer);
+    currentRoom = null;
+    isCpuGame = false;
+    cpuState = null;
+    history.replaceState(null, '', location.pathname);
+    showLobbyScreen();
+  });
+
+  // ---------- WhatsApp share ----------
+  document.getElementById('whatsappBtn').addEventListener('click', () => {
+    if(!currentRoom) return;
+    const link = location.origin + location.pathname + '?room=' + currentRoom;
+    const gameLabel = selectedGame === 'bingo' ? 'Bingo' : 'Tic-Tac-Toe';
+    const text = `🕹️ Join me for a game of ${gameLabel} on Play Night!\n${link}\nRoom code: ${currentRoom}`;
+    const waUrl = 'https://wa.me/?text=' + encodeURIComponent(text);
+    window.open(waUrl, '_blank', 'noopener');
+  });
+
+  // ---------- chat ----------
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  function linkifyEscaped(escapedText){
+    return escapedText.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  }
+
+  function renderChat(state){
+    if(!state.chat) state.chat = [];
+    const wrap = document.getElementById('chatMessages');
+    const hadFocus = document.activeElement === document.getElementById('chatInput');
+    const wasScrolledToBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 30;
+
+    wrap.innerHTML = '';
+    if(state.chat.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'chat-empty';
+      empty.id = 'chatEmpty';
+      empty.textContent = 'No messages yet — say hi 👋';
+      wrap.appendChild(empty);
+    } else {
+      state.chat.forEach(m => {
+        const isMe = m.senderId === myId;
+        const div = document.createElement('div');
+        div.className = 'chat-msg' + (isMe ? ' me' : '');
+        const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML =
+          '<div class="meta">' + escapeHtml(isMe ? 'You' : m.senderName) + ' · ' + time + '</div>' +
+          '<div class="text">' + linkifyEscaped(escapeHtml(m.text)) + '</div>';
+        wrap.appendChild(div);
+      });
+    }
+    if(wasScrolledToBottom || state.chat.length <= lastChatCount + 1){
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+    lastChatCount = state.chat.length;
+  }
+
+  async function sendChatMessage(){
+    if(!currentRoom || isCpuGame) return;
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    const state = await loadRoom(currentRoom);
+    if(!state) return;
+    if(!state.chat) state.chat = [];
+    state.chat.push({
+      senderId: myId,
+      senderName: myName || 'Player',
+      text: text.slice(0, 300),
+      ts: Date.now()
+    });
+    if(state.chat.length > 150) state.chat = state.chat.slice(-150);
+    input.value = '';
+    await saveRoom(currentRoom, state);
+    renderRoom(state);
+  }
+
+  document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
+  document.getElementById('chatInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); sendChatMessage(); }
+  });
+
+  // auto-join if URL already has room code and a join click happens, or auto-attempt join silently
+  (async function tryAutoJoin(){
+    const params = new URLSearchParams(location.search);
+    const code = params.get('room');
+    if(!code) return;
+    const state = await loadRoom(code);
+    if(state){
+      // just prefill, let user enter name and press Join
+      document.getElementById('codeInput').value = code;
+    }
+  })();
+})();
+</script>
+</body>
+</html>
