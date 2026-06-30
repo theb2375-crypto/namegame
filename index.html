@@ -1246,6 +1246,7 @@
   }
 
   function renderBingo(state){
+    if(!Array.isArray(state.bingo.called)) state.bingo.called = [];
     const myCard = genBingoCard(currentRoom + ':' + myId);
     const grid = document.getElementById('bingoGrid');
     grid.innerHTML = '';
@@ -1289,6 +1290,7 @@
   document.getElementById('drawBtn').addEventListener('click', async () => {
     const state = await loadRoom(currentRoom);
     if(!state || state.bingo.winnerName) return;
+    if(!Array.isArray(state.bingo.called)) state.bingo.called = [];
     const remaining = [];
     for(let n=1;n<=75;n++) if(!state.bingo.called.includes(n)) remaining.push(n);
     if(remaining.length === 0) return;
@@ -1302,6 +1304,7 @@
   document.getElementById('claimBingoBtn').addEventListener('click', async () => {
     const state = await loadRoom(currentRoom);
     if(!state || state.bingo.winnerName) return;
+    if(!Array.isArray(state.bingo.called)) state.bingo.called = [];
     const myCard = genBingoCard(currentRoom + ':' + myId);
     const called = new Set(state.bingo.called);
     const marked = myCard.map(row => row.map(v => v === 'FREE' || called.has(v)));
